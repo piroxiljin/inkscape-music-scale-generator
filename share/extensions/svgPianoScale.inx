@@ -1,21 +1,25 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<!-- This document was created with Syntext Serna Free. -->
-<inkscape-extension xmlns="http://www.inkscape.org/namespace/inkscape/extension">
+<!-- This document was created with Syntext Serna Free. --><inkscape-extension xmlns="http://www.inkscape.org/namespace/inkscape/extension">
   <_name>Piano scale</_name>
   <id>Page::Blank</id>
   <dependency type="executable" location="extensions">inkex.py</dependency>
   <dependency type="executable" location="extensions">svgPianoScale.py</dependency>
   <param name="firstNote" type="string" _gui-text="First note">C1</param>
-  <param type="string" _gui-text="Last note" name="lastNote">B2</param>
-  <param type="string" _gui-text="Key note" name="keynote">C1</param>
+  <param name="lastNote" type="string" _gui-text="Last note">B2</param>
+  <param name="keynote" type="string" _gui-text="Key note">C1</param>
   <param name="tab" type="notebook">
-    <page name="tab" _gui-text="Direct intervals">
+    <page name="direct" _gui-text="Direct intervals">
       <param name="intervals" type="string" _gui-text="Intervals">2212221</param>
     </page>
-    <page name="tab" _gui-text="Scale">
-      <param name="scale" type="enum" _gui-text="Scale">
-        <_item value="1">Major</_item>
-        <_item value="2">Minor</_item>
+    <page name="scale" _gui-text="Scale">
+      <param name="scale" type="enum" _gui-text="Muical scale">
+        <_item value="1">Ionian</_item>
+        <_item value="2">Dorian</_item>
+        <_item value="3">Phrygian</_item>
+        <_item value="4">Lydian</_item>
+        <_item value="5">Mixolydian</_item>
+        <_item value="6">Aeolian</_item>
+        <_item value="7">Locrian</_item>
       </param>
     </page>
   </param>

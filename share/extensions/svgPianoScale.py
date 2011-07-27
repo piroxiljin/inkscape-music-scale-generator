@@ -32,6 +32,9 @@ keys =  {'C':'W', 'C#':'B',  'D':'W', 'D#':'B',  'E':'W', 'F':'W', 'F#':'B', 'G'
 keys_numbers =  {'C':'0', 'C#':'0',  'D':'1', 'D#':'1',  'E':'2', 'F':'3', 'F#':'3', 'G':'4', 'G#':'4',  'A':'5', 'A#':'5',  'B':'6'}
 keys_order =    {'C':'0', 'C#':'1',  'D':'2', 'D#':'3',  'E':'4', 'F':'5', 'F#':'6', 'G':'7', 'G#':'8',  'A':'9', 'A#':'10',  'B':'11'}
 
+intervals = ("2212221", "2122212", "1222122", "2221221", "2212212", "2122122", "1221222")
+#intervals = {1:"2212221", 2:"2122212", 3:"1222122", 4:"2221221", 5:"2212212", 6:"2122122", 7:"1221222"}
+
 def keyNumberFromNote(note):
     note = note.upper()
     note = note.strip()
@@ -250,17 +253,9 @@ class SVGPianoScale (inkex.Effect):
             # for 
         # else:
         # return
-    def effect(self):
-        self.validate_options()
-        
-        t = 'translate(' + str( self.view_center[0] ) + ',' + str( self.view_center[1] ) + ')'
-        parent = self.document.getroot()
-        group = inkex.etree.SubElement(parent, 'g', { 'transform':t})
-
-        self.createPiano(group)
-        
+    def createMarkersFromIntervals(self, parent, intervals):
         intervalSumm = 0
-        for i in self.options.intervals:
+        for i in intervals:
             intervalSumm += int(i)
         if intervalSumm != 12:
             inkex.debug("Warning! Scale have not 12 half-tones")
@@ -271,58 +266,51 @@ class SVGPianoScale (inkex.Effect):
         markedKeys = ()
         markerText = ()
         if keyNumberFromNote(self.options.keynote) in range(firstKeyNum, lastKeyNum+1):
-        #if keyNumberFromNote(self.options.keynote) >= firstKeyNum and keyNumberFromNote(self.options.keynote) <= firstKeyNum:
             currentKey = keyNumberFromNote(self.options.keynote)
             markedKeys = (currentKey,)
             markerText = ('1',)
             currentInterval = 0
             for key in range(keyNumberFromNote(self.options.keynote), lastKeyNum+1):
-                if key-currentKey == int(self.options.intervals[currentInterval]):
+                if key-currentKey == int(intervals[currentInterval]):
                     markedKeys += (key,)
                     currentInterval += 1
                     markerText += (str(currentInterval+1),)
-                    if currentInterval == len(self.options.intervals):
+                    if currentInterval == len(intervals):
                         currentInterval = 0
                     currentKey = key
                     
             currentKey = keyNumberFromNote(self.options.keynote)
-            currentInterval = len(self.options.intervals)-1
+            currentInterval = len(intervals)-1
             for key in range(keyNumberFromNote(self.options.keynote), firstKeyNum-1, -1):
-                if currentKey - key == int(self.options.intervals[currentInterval]):
+                if currentKey - key == int(intervals[currentInterval]):
                     markedKeys += (key,)
                     markerText += (str(currentInterval+1),)
                     currentInterval -= 1
                     if currentInterval == -1:
-                        currentInterval = len(self.options.intervals)-1
+                        currentInterval = len(intervals)-1
                     currentKey = key
                     
                     
-        self.createMarkers(group, markedKeys, markerText)
-                
-            
-                
-        # else:
-
-        currentKey = keyNumberFromNote(self.options.keynote)
-        markedKeys = (currentKey,)
-        markerText = ('1',)
-
-        counter=1
+        self.createMarkers(parent, markedKeys, markerText)
+    
+    def effect(self):
+        self.validate_options()
         
-        #for key in range(firstKeyNum, lastKeyNum+1):
-            
         
-        for i in self.options.intervals:
-            currentKey += int(i)
-            counter += 1
-            markedKeys += (currentKey, )
-            markerText += (str(counter),)
-            
-        #markeredKeys = (0, 2, 4, 5, 7, 9, 11, 12, 14, 16, 17, 19, 21, 23)
-        #markerText = ('1', '1+', '2', '2+', '3', '4', '4+', '5', '5+', '6', '6+', '7', '8', '8+', '9', '9+', '10', '11', '11+', '12', '12+', '13', '13+', '14')
-        #markerText = ('1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16')
-        # self.createMarkers(group, markedKeys, markerText)
-        #inkex.etree.SubElement(self.year_g, 'text', txt_atts).text = str(self.options.year)
+        t = 'translate(' + str( self.view_center[0] ) + ',' + str( self.view_center[1] ) + ')'
+        parent = self.document.getroot()
+        group = inkex.etree.SubElement(parent, 'g', { 'transform':t})
+
+        self.createPiano(group)
+        
+        inkex.debug("self.options.tab = " + str(self.options.tab))
+        inkex.debug("self.options.tab = " + self.options.tab)
+        if str(self.options.tab) == '"scale"':
+            self.createMarkersFromIntervals(group, intervals[int(self.options.scale)-1])
+            inkex.debug("intervals = " + intervals[int(self.options.scale)-1])
+        else:
+            self.createMarkersFromIntervals(group, self.options.intervals)
+
 
 
 if __name__ == '__main__':   #pragma: no cover
