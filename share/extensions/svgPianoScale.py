@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 
 '''
-calendar.py
-A calendar generator plugin for Inkscape, but also can be used as a standalone
-command line application.
+svgPianoScale.py
+Inkscape generator plugin for automatic creation schemes of musical scales and chords.
 
-Copyright (C) 2008 Aurelio A. Heckert <aurium(a)gmail.com>
+Copyright (C) 2011 Iljin Alexender <piroxiljin(a)gmail.com>
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -22,7 +21,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 '''
 
-__version__ = "0.2"
+__version__ = "1.0"
 
 import inkex, simplestyle, re, math
 from datetime import *
