@@ -303,11 +303,11 @@ class SVGPianoScale (inkex.Effect):
 
         self.createPiano(group)
         
-        inkex.debug("self.options.tab = " + str(self.options.tab))
-        inkex.debug("self.options.tab = " + self.options.tab)
+        # inkex.debug("self.options.tab = " + str(self.options.tab))
+        # inkex.debug("self.options.tab = " + self.options.tab)
         if str(self.options.tab) == '"scale"':
             self.createMarkersFromIntervals(group, intervals[int(self.options.scale)-1])
-            inkex.debug("intervals = " + intervals[int(self.options.scale)-1])
+        #    inkex.debug("intervals = " + intervals[int(self.options.scale)-1])
         else:
             self.createMarkersFromIntervals(group, self.options.intervals)
 
