@@ -71,7 +71,9 @@ class SVGPianoScale (inkex.Effect):
     white_key_width = inkex.unittouu('6 mm');
     black_key_height = inkex.unittouu('18 mm');
     white_key_height = inkex.unittouu('30 mm');
-
+    doc_width = 0
+    doc_height = 0
+        
     def __init__(self):
         inkex.Effect.__init__(self)
         self.OptionParser.add_option("--firstNote",
@@ -90,29 +92,32 @@ class SVGPianoScale (inkex.Effect):
           action="store", type="string",
           dest="keynote")
         self.OptionParser.add_option("--scale",
-          action="store", type="string",
+          action="store", type="int",
           dest="scale")
+        self.OptionParser.add_option("--helpSheet",
+          action="store", type="int",
+          dest="helpSheet")
         
    
     def validate_options(self):
         return
 
+    def calculate_size_and_positions(self):
+        self.doc_width = inkex.unittouu(self.document.getroot().get('width'))
+        self.doc_height = inkex.unittouu(self.document.getroot().get('height'))        
+        self.black_key_width = inkex.unittouu('3.6 mm');
+        self.white_key_width = inkex.unittouu('6 mm');
+        self.black_key_height = inkex.unittouu('18 mm');
+        self.white_key_height = inkex.unittouu('30 mm');
 
     def createBlackKey(self, parent, number):
-        black_key_width = inkex.unittouu('3.6 mm');
-        white_key_width = inkex.unittouu('6 mm');
-        black_key_height = inkex.unittouu('18 mm');
-		
-        key_atts = {'x':str(white_key_width * number + white_key_width - black_key_width/2), 'y':'0.0', 'width':str(black_key_width), 'height':str(black_key_height),
+        key_atts = {'x':str(self.white_key_width * number + self.white_key_width - self.black_key_width/2), 'y':'0.0', 'width':str(self.black_key_width), 'height':str(self.black_key_height),
             'ry':str(inkex.unittouu('0.7 mm')),
 			'style':'fill:#000000;stroke:#000000;stroke-width:'+str(inkex.unittouu('0.1 mm'))+';stroke-opacity:1;fill-opacity:1' }
         white_key = inkex.etree.SubElement(parent, 'rect', key_atts)
 
     def createWhiteKey(self, parent, number):
-        white_key_width = inkex.unittouu('6 mm');
-        white_key_height = inkex.unittouu('30 mm');
-		
-        key_atts = {'x':str(white_key_width * number), 'y':'0.0', 'width':str(white_key_width), 'height':str(white_key_height),
+        key_atts = {'x':str(self.white_key_width * number), 'y':'0.0', 'width':str(self.white_key_width), 'height':str(self.white_key_height),
             'ry':str(inkex.unittouu('0.7 mm')),
 			'style':'fill:#ffffff;stroke:#000000;stroke-width:'+str(inkex.unittouu('0.25 mm'))+';stroke-opacity:1;fill-opacity:1' }
         white_key = inkex.etree.SubElement(parent, 'rect', key_atts)
@@ -166,16 +171,12 @@ class SVGPianoScale (inkex.Effect):
         firstKeyNumber = keyNumberFromNote(self.options.firstNote)
         lastKeyNumber = keyNumberFromNote(self.options.lastNote)
         self.createKeyInRange(parent, firstKeyNumber, lastKeyNumber)
-        
-        black_key_width = inkex.unittouu('3.6 mm')
-        white_key_width = inkex.unittouu('6 mm')
-        black_key_height = inkex.unittouu('18 mm')
 
-        rectBump = (white_key_width - black_key_width/2)
+        rectBump = (self.white_key_width - self.black_key_width/2)
         rectBump = inkex.unittouu('1 mm')
-        rect_x1 = white_key_width * (whiteKeyCountInRange(0, firstKeyNumber)-1)- rectBump
+        rect_x1 = self.white_key_width * (whiteKeyCountInRange(0, firstKeyNumber)-1)- rectBump
         rect_y1 = inkex.unittouu('-3 mm')
-        rect_width = white_key_width * (whiteKeyCountInRange(firstKeyNumber, lastKeyNumber)) + rectBump*2
+        rect_width = self.white_key_width * (whiteKeyCountInRange(firstKeyNumber, lastKeyNumber)) + rectBump*2
         rect_height = inkex.unittouu('4 mm')
         rect_atts = {'x':str(rect_x1), 
                     'y':str(rect_y1), 
@@ -243,16 +244,6 @@ class SVGPianoScale (inkex.Effect):
             current += 1;
         return
         
-    # def isKeyMarked(self, key, keynote, intervals):
-        # intervalSumm = 0
-        # for i in self.options.intervals:
-            # intervalSumm += int(i)
-        # if intervalSumm != 12:
-            # inkex.debug("Warning! Scale have not 12 half-tones")
-        # if key > keynote :
-            # for 
-        # else:
-        # return
     def createMarkersFromIntervals(self, parent, intervals):
         intervalSumm = 0
         for i in intervals:
@@ -293,25 +284,55 @@ class SVGPianoScale (inkex.Effect):
                     
         self.createMarkers(parent, markedKeys, markerText)
     
+    def createHelpSheetIonianScale(self, parent):
+        textstyle = { 'font-size': '64px',
+          'font-family': 'arial',
+          'text-anchor': 'middle',
+          'text-align': 'center',
+          'fill': '#000000'
+          }
+        text_atts = { 'style':simplestyle.formatStyle(textstyle),
+                    'x': str( self.doc_width/2 ),
+                    'y': str( inkex.unittouu('18 mm') ) }
+        text = inkex.etree.SubElement(parent, 'text', text_atts)
+        text.text = str("Ionian scale")
+        for i in range(0, 12):
+            self.options.keynote = notes[i]
+            if keys_color[i] == "W":
+                t = 'translate(' + str( self.doc_width/2 ) + ','\
+                    + str( self.doc_height-self.white_key_height*1.5-(self.white_key_height+inkex.unittouu('7 mm')) * int(keys_numbers[self.options.keynote]) ) + ')'
+            else:
+                t = 'translate(' + str( inkex.unittouu('7 mm') ) + ',' \
+                    + str( self.doc_height-self.white_key_height*1.5-(self.white_key_height+inkex.unittouu('7 mm')) * int(keys_numbers[self.options.keynote])-self.white_key_height*0.5 ) + ')'
+            group = inkex.etree.SubElement(parent, 'g', { 'transform':t})
+            self.createPiano(group)
+            self.createMarkersFromIntervals(group, intervals[self.options.helpSheet-1])
+
+    def createHelpSheet(self, parent, helpSheetNumber):
+        self.createHelpSheetIonianScale(parent)
+        return
+        
     def effect(self):
         self.validate_options()
+        self.calculate_size_and_positions()
         
         
-        t = 'translate(' + str( self.view_center[0] ) + ',' + str( self.view_center[1] ) + ')'
         parent = self.document.getroot()
-        group = inkex.etree.SubElement(parent, 'g', { 'transform':t})
 
-        self.createPiano(group)
-        
-        # inkex.debug("self.options.tab = " + str(self.options.tab))
-        # inkex.debug("self.options.tab = " + self.options.tab)
         if str(self.options.tab) == '"scale"':
-            self.createMarkersFromIntervals(group, intervals[int(self.options.scale)-1])
-        #    inkex.debug("intervals = " + intervals[int(self.options.scale)-1])
+            t = 'translate(' + str( self.view_center[0] ) + ',' + str( self.view_center[1] ) + ')'
+            group = inkex.etree.SubElement(parent, 'g', { 'transform':t})
+            self.createPiano(group)
+            self.createMarkersFromIntervals(group, intervals[self.options.scale-1])
+        elif str(self.options.tab) == '"helpSheet"':
+            t = 'translate(' + str( inkex.unittouu('5 mm') ) + ',' + str( inkex.unittouu('5 mm') ) + ')'
+            group = inkex.etree.SubElement(parent, 'g', { 'transform':t})
+            self.createHelpSheet(group, self.options.helpSheet)
         else:
+            t = 'translate(' + str( self.view_center[0] ) + ',' + str( self.view_center[1] ) + ')'
+            group = inkex.etree.SubElement(parent, 'g', { 'transform':t})
+            self.createPiano(group)
             self.createMarkersFromIntervals(group, self.options.intervals)
-
-
 
 if __name__ == '__main__':   #pragma: no cover
     e = SVGPianoScale()

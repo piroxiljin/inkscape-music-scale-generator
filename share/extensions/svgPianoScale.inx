@@ -22,6 +22,17 @@
         <_item value="7">Locrian</_item>
       </param>
     </page>
+    <page name="helpSheet" _gui-text="Help sheet">
+      <param name="helpSheet" type="enum" _gui-text="Help sheet">
+        <_item value="1">Ionian scale</_item>
+        <_item value="2">Dorian scale</_item>
+        <_item value="3">Phrygian scale</_item>
+        <_item value="4">Lydian scale</_item>
+        <_item value="5">Mixolydian scale</_item>
+        <_item value="6">Aeolian scale</_item>
+        <_item value="7">Locrian scale</_item>
+      </param>
+    </page>
   </param>
   <effect>
     <object-type>all</object-type>
