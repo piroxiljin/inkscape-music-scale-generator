@@ -35,6 +35,22 @@ keys_order =    {'C':'0', 'C#':'1',  'D':'2', 'D#':'3',  'E':'4', 'F':'5', 'F#':
 intervals = ("2212221", "2122212", "1222122", "2221221", "2212212", "2122122", "1221222")
 #intervals = {1:"2212221", 2:"2122212", 3:"1222122", 4:"2221221", 5:"2212212", 6:"2122122", 7:"1221222"}
 
+helpSheetTitle = (  "Ionian (major) scale", 
+                    "Dorian scale",
+                    "Phrygian scale",
+                    "Lydian scale",
+                    "Mixolydian scale",
+                    "Aeolian (natural minor) scale",
+                    "Locrian scale")
+                    
+helpSheetIntervals = (  "2212221", 
+                        "2122212", 
+                        "1222122", 
+                        "2221221", 
+                        "2212212", 
+                        "2122122", 
+                        "1221222")                
+
 def keyNumberFromNote(note):
     note = note.upper()
     note = note.strip()
@@ -283,8 +299,7 @@ class SVGPianoScale (inkex.Effect):
                     
                     
         self.createMarkers(parent, markedKeys, markerText)
-    
-    def createHelpSheetIonianScale(self, parent):
+    def createHelpSheetScaleFromTitleAndIntervals(self, parent, title, intervals):
         textstyle = { 'font-size': '64px',
           'font-family': 'arial',
           'text-anchor': 'middle',
@@ -295,7 +310,7 @@ class SVGPianoScale (inkex.Effect):
                     'x': str( self.doc_width/2 ),
                     'y': str( inkex.unittouu('18 mm') ) }
         text = inkex.etree.SubElement(parent, 'text', text_atts)
-        text.text = str("Ionian scale")
+        text.text = title
         for i in range(0, 12):
             self.options.keynote = notes[i]
             if keys_color[i] == "W":
@@ -306,10 +321,10 @@ class SVGPianoScale (inkex.Effect):
                     + str( self.doc_height-self.white_key_height*1.5-(self.white_key_height+inkex.unittouu('7 mm')) * int(keys_numbers[self.options.keynote])-self.white_key_height*0.5 ) + ')'
             group = inkex.etree.SubElement(parent, 'g', { 'transform':t})
             self.createPiano(group)
-            self.createMarkersFromIntervals(group, intervals[self.options.helpSheet-1])
-
+            self.createMarkersFromIntervals(group, intervals)
+            
     def createHelpSheet(self, parent, helpSheetNumber):
-        self.createHelpSheetIonianScale(parent)
+        self.createHelpSheetScaleFromTitleAndIntervals(parent, helpSheetTitle[helpSheetNumber], helpSheetIntervals[helpSheetNumber])
         return
         
     def effect(self):
@@ -323,7 +338,7 @@ class SVGPianoScale (inkex.Effect):
             t = 'translate(' + str( self.view_center[0] ) + ',' + str( self.view_center[1] ) + ')'
             group = inkex.etree.SubElement(parent, 'g', { 'transform':t})
             self.createPiano(group)
-            self.createMarkersFromIntervals(group, intervals[self.options.scale-1])
+            self.createMarkersFromIntervals(group, intervals[self.options.scale])
         elif str(self.options.tab) == '"helpSheet"':
             t = 'translate(' + str( inkex.unittouu('5 mm') ) + ',' + str( inkex.unittouu('5 mm') ) + ')'
             group = inkex.etree.SubElement(parent, 'g', { 'transform':t})

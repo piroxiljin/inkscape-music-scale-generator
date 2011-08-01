@@ -13,24 +13,24 @@
     </page>
     <page name="scale" _gui-text="Scale">
       <param name="scale" type="enum" _gui-text="Muical scale">
-        <_item value="1">Ionian</_item>
-        <_item value="2">Dorian</_item>
-        <_item value="3">Phrygian</_item>
-        <_item value="4">Lydian</_item>
-        <_item value="5">Mixolydian</_item>
-        <_item value="6">Aeolian</_item>
-        <_item value="7">Locrian</_item>
+        <_item value="0">Ionian</_item>
+        <_item value="1">Dorian</_item>
+        <_item value="2">Phrygian</_item>
+        <_item value="3">Lydian</_item>
+        <_item value="4">Mixolydian</_item>
+        <_item value="5">Aeolian</_item>
+        <_item value="6">Locrian</_item>
       </param>
     </page>
     <page name="helpSheet" _gui-text="Help sheet">
       <param name="helpSheet" type="enum" _gui-text="Help sheet">
-        <_item value="1">Ionian scale</_item>
-        <_item value="2">Dorian scale</_item>
-        <_item value="3">Phrygian scale</_item>
-        <_item value="4">Lydian scale</_item>
-        <_item value="5">Mixolydian scale</_item>
-        <_item value="6">Aeolian scale</_item>
-        <_item value="7">Locrian scale</_item>
+        <_item value="0">Ionian scale</_item>
+        <_item value="1">Dorian scale</_item>
+        <_item value="2">Phrygian scale</_item>
+        <_item value="3">Lydian scale</_item>
+        <_item value="4">Mixolydian scale</_item>
+        <_item value="5">Aeolian scale</_item>
+        <_item value="6">Locrian scale</_item>
       </param>
     </page>
   </param>
