@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 
 '''
 svgPianoScale.py
@@ -21,42 +21,47 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 '''
 
-__version__ = "1.0"
+__version__ = "1.0.1"
+# Original by Alexander Iljin
+# Some mods to 0.91 by Neon22 2016
 
 import inkex, simplestyle, re, math
 from datetime import *
 
-notes =       ('C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B')
-keys_color =  ('W', 'B', 'W',  'B', 'W', 'W',  'B',  'W', 'B',  'W', 'B',  'W')
-keys =  {'C':'W', 'C#':'B',  'D':'W', 'D#':'B',  'E':'W', 'F':'W', 'F#':'B', 'G':'W', 'G#':'B',  'A':'W', 'A#':'B',  'B':'W'}
-keys_numbers =  {'C':'0', 'C#':'0',  'D':'1', 'D#':'1',  'E':'2', 'F':'3', 'F#':'3', 'G':'4', 'G#':'4',  'A':'5', 'A#':'5',  'B':'6'}
-keys_order =    {'C':'0', 'C#':'1',  'D':'2', 'D#':'3',  'E':'4', 'F':'5', 'F#':'6', 'G':'7', 'G#':'8',  'A':'9', 'A#':'10',  'B':'11'}
+notes =        ('C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B')
+keys_color =   ('W', 'B', 'W',  'B', 'W', 'W',  'B',  'W', 'B',  'W', 'B',  'W') # 12 notes
+keys =         {'C':'W', 'C#':'B',  'D':'W', 'D#':'B',  'E':'W', 'F':'W', 'F#':'B', 'G':'W',
+                'G#':'B',  'A':'W', 'A#':'B',  'B':'W' }
+keys_numbers = {'C':'0', 'C#':'0',  'D':'1', 'D#':'1',  'E':'2', 'F':'3', 'F#':'3', 'G':'4',
+                'G#':'4',  'A':'5', 'A#':'5',  'B':'6' }
+keys_order =   {'C':'0', 'C#':'1',  'D':'2', 'D#':'3',  'E':'4', 'F':'5', 'F#':'6', 'G':'7',
+                'G#':'8',  'A':'9', 'A#':'10',  'B':'11' }
 
 intervals = ("2212221", "2122212", "1222122", "2221221", "2212212", "2122122", "1221222")
-#intervals = {1:"2212221", 2:"2122212", 3:"1222122", 4:"2221221", 5:"2212212", 6:"2122122", 7:"1221222"}
 
-helpSheetTitle = (  "Ionian (major) scale", 
-                    "Dorian scale",
-                    "Phrygian scale",
-                    "Lydian scale",
-                    "Mixolydian scale",
-                    "Aeolian (natural minor) scale",
-                    "Locrian scale")
-                    
-helpSheetIntervals = (  "2212221", 
-                        "2122212", 
-                        "1222122", 
-                        "2221221", 
-                        "2212212", 
-                        "2122122", 
-                        "1221222")                
+# Drawing style
+White = '#ffffff'
+Black = '#000000'
+Marker_color =  '#b3b3b3'  # Ellipse fill color
+
+helpSheets = [["Ionian (major) scale",          "2212221"],
+              ["Dorian scale",                  "2122212"],
+              ["Phrygian scale",                "1222122"],
+              ["Lydian scale",                  "2221221"],
+              ["Mixolydian scale",              "2212212"],
+              ["Aeolian (natural minor) scale", "2122122"],
+              ["Locrian scale",                 "1221222"]
+             ]
 
 def keyNumberFromNote(note):
-    note = note.upper()
-    note = note.strip()
+    """ Given a note such as C1 or C#1 where:
+        - the 1 defines the octave (starts from 1)
+        - the # defines note is sharp
+        return the notes numeric value, from 0
+    """
+    note = note.upper().strip()
     octave = 1
-    dies = '#' in note
-    if dies :
+    if '#' in note : # sharp
         if (len(note) > 2) and note[2].isdigit():
                 octave = int(note[2])
         note = note[0:2]
@@ -64,15 +69,12 @@ def keyNumberFromNote(note):
         if (len(note) > 1) and note[1].isdigit():
                 octave = int(note[1])
         note = note[0]
-    
     return int(keys_order[note])+(octave-1)*12
 
-def noteFromKeyNumber(keyNumber):
-    octave = floor(keyNumber / 12) + 1
-    note = keyNumber % 12
-    return notes[note]+str(octave)
-
 def whiteKeyCountInRange(firstNote, lastNote):
+    """ Count the White notes between 
+        - used by createPiano 
+    """
     count = 0
     for key in range(firstNote, lastNote+1):
         if keys_color[key%12] == "W":
@@ -80,65 +82,90 @@ def whiteKeyCountInRange(firstNote, lastNote):
     return count
 
 def colorFromKey(keyNumber):
+    """ Return B or W based on key. Use octaves 
+        - used by create_markers 
+    """
     return keys_color[keyNumber%12]
     
+
+
 class SVGPianoScale (inkex.Effect):
-    black_key_width = inkex.unittouu('3.6 mm');
-    white_key_width = inkex.unittouu('6 mm');
-    black_key_height = inkex.unittouu('18 mm');
-    white_key_height = inkex.unittouu('30 mm');
-    doc_width = 0
-    doc_height = 0
-        
+    marker_radius_factor = 0.42   # position marker in X on piano key
+    marker_y_offset_factor = 0.92 # position marker in Y
+
     def __init__(self):
+        " Extract options and validate "
         inkex.Effect.__init__(self)
         self.OptionParser.add_option("--firstNote",
-          action="store", type="string", default="C1",
-          dest="firstNote")
+              action="store", type="string", default="C1",
+              dest="firstNote")
         self.OptionParser.add_option("--lastNote",
-          action="store", type="string", default="B2",
-          dest="lastNote")
+              action="store", type="string", default="B2",
+              dest="lastNote")
         self.OptionParser.add_option("--tab",
-          action="store", type="string",
-          dest="tab")
+              action="store", type="string",
+              dest="tab")
         self.OptionParser.add_option("--intervals",
-          action="store", type="string",
-          dest="intervals")
+              action="store", type="string",
+              dest="intervals")
         self.OptionParser.add_option("--keynote",
-          action="store", type="string",
-          dest="keynote")
+              action="store", type="string",
+              dest="keynote")
         self.OptionParser.add_option("--scale",
-          action="store", type="int",
-          dest="scale")
+              action="store", type="int",
+              dest="scale")
         self.OptionParser.add_option("--helpSheet",
-          action="store", type="int",
-          dest="helpSheet")
-        
+              action="store", type="int",
+              dest="helpSheet")
+        #
+        self.validate_options()
    
     def validate_options(self):
-        return
+        " potentially validate input - one day "
+        # are the three notes legal: firstNote, lastNote, keynote
+        #  (C1, C#1, ...)
+        # does intervals contain only ints and add up to 12
+        pass
+
 
     def calculate_size_and_positions(self):
-        self.doc_width = inkex.unittouu(self.document.getroot().get('width'))
-        self.doc_height = inkex.unittouu(self.document.getroot().get('height'))        
-        self.black_key_width = inkex.unittouu('3.6 mm');
-        self.white_key_width = inkex.unittouu('6 mm');
-        self.black_key_height = inkex.unittouu('18 mm');
-        self.white_key_height = inkex.unittouu('30 mm');
+        " Determine page size and define key dimensions "
+        self.doc_width = self.unittouu(self.document.getroot().get('width'))
+        self.doc_height = self.unittouu(self.document.getroot().get('height'))
+        # Size of the keys
+        self.black_key_width = self.unittouu('3.6 mm');
+        self.white_key_width = self.unittouu('6 mm');
+        self.black_key_height = self.unittouu('18 mm');
+        self.white_key_height = self.unittouu('30 mm');
 
     def createBlackKey(self, parent, number):
-        key_atts = {'x':str(self.white_key_width * number + self.white_key_width - self.black_key_width/2), 'y':'0.0', 'width':str(self.black_key_width), 'height':str(self.black_key_height),
-            'ry':str(inkex.unittouu('0.7 mm')),
-			'style':'fill:#000000;stroke:#000000;stroke-width:'+str(inkex.unittouu('0.1 mm'))+';stroke-opacity:1;fill-opacity:1' }
+        """ Insert Black key into scene
+            - number times width is X position
+        """
+        key_atts = {'x':str(self.white_key_width * number + self.white_key_width - self.black_key_width/2),
+                    'y':'0.0',
+                    'width':str(self.black_key_width),
+                    'height':str(self.black_key_height),
+                    'ry':str(self.unittouu('0.7 mm')),
+                    'style':'fill:%s;stroke:%s;stroke-width:%s;stroke-opacity:1;fill-opacity:1' %(Black, Black, self.unittouu('0.1 mm')) }
         white_key = inkex.etree.SubElement(parent, 'rect', key_atts)
 
     def createWhiteKey(self, parent, number):
-        key_atts = {'x':str(self.white_key_width * number), 'y':'0.0', 'width':str(self.white_key_width), 'height':str(self.white_key_height),
-            'ry':str(inkex.unittouu('0.7 mm')),
-			'style':'fill:#ffffff;stroke:#000000;stroke-width:'+str(inkex.unittouu('0.25 mm'))+';stroke-opacity:1;fill-opacity:1' }
+        """ Insert White key into scene
+            - number times width is X position
+        """
+        key_atts = {'x':str(self.white_key_width * number),
+                    'y':'0.0',
+                    'width':str(self.white_key_width),
+                    'height':str(self.white_key_height),
+                    'ry':str(self.unittouu('0.7 mm')),
+                    'style':'fill:%s;stroke:%s;stroke-width:%s;stroke-opacity:1;fill-opacity:1' % (White, Black, self.unittouu('0.25 mm'))}
         white_key = inkex.etree.SubElement(parent, 'rect', key_atts)
 
     def createKeyByNumber(self, parent, keyNumber):
+        """ Use Keynumber to detrmine octave and position within
+            - draw correct key on basis of note in octave sequence.
+        """
         octave = math.floor(keyNumber / 12) + 1
         note = keyNumber % 12
         key =  int(keys_numbers[notes[note]])
@@ -146,109 +173,82 @@ class SVGPianoScale (inkex.Effect):
             self.createWhiteKey(parent, key+7*(octave-1))
         else:
             self.createBlackKey(parent, key+7*(octave-1))
-        
-    def createKey(self, parent, key):
-        key = key.upper()
-        key = key.strip()
-        octave = 1
-        dies = '#' in key
-        if dies :
-            if (len(key) > 2):
-                if  key[2].isdigit():
-                    octave = int(key[2])
-            note = key[0:2]
-        else:
-            inkex.debug("len(key) = " + str(len(key)))
-            if (len(key) > 1) :
-                if key[1].isdigit():
-                    octave = int(key[1])
-            note = key[0]
-            
-        # if key in notes:
-            # inkex.debug('key is a note (' + note + ')')
-        # else:
-            # inkex.debug('key is not a note (' + note + ')')
-        # inkex.debug("note = " + note)
-        # inkex.debug("keys[note]  = " + keys[note] )
-        if keys[note] == "W":
-            self.createWhiteKey(parent, int(keys_numbers[note])+7*(octave-1))
-        else:
-            self.createBlackKey(parent, int(keys_numbers[note])+7*(octave-1))
-       
+
     def createKeyInRange(self, parent, firstKeyNum, lastKeyNum):
+        """ Draw keys in a range 
+            - do it twice so Black keys are drawn over White ones
+        """
         for key in range(firstKeyNum, lastKeyNum+1):
             if keys_color[key % 12] == 'W':
                 self.createKeyByNumber(parent, key)
         for key in range(firstKeyNum, lastKeyNum+1):
             if keys_color[key % 12] == 'B':
                 self.createKeyByNumber(parent, key)
-            
-    def createPiano(self, parent):
-        firstKeyNumber = keyNumberFromNote(self.options.firstNote)
-        lastKeyNumber = keyNumberFromNote(self.options.lastNote)
-        self.createKeyInRange(parent, firstKeyNumber, lastKeyNumber)
 
+    def createPiano(self, parent):
+        """ Draw keys defined by options
+            - add Piano 'box' above
+        """
+        firstKeyNumber = keyNumberFromNote(self.options.firstNote)
+        lastKeyNumber =  keyNumberFromNote(self.options.lastNote)
+        self.createKeyInRange(parent, firstKeyNumber, lastKeyNumber)
+        # Draw the Piano box above keys
         rectBump = (self.white_key_width - self.black_key_width/2)
-        rectBump = inkex.unittouu('1 mm')
+        rectBump = self.unittouu('1 mm')
         rect_x1 = self.white_key_width * (whiteKeyCountInRange(0, firstKeyNumber)-1)- rectBump
-        rect_y1 = inkex.unittouu('-3 mm')
+        rect_y1 = self.unittouu('-3 mm')
         rect_width = self.white_key_width * (whiteKeyCountInRange(firstKeyNumber, lastKeyNumber)) + rectBump*2
-        rect_height = inkex.unittouu('4 mm')
+        rect_height = self.unittouu('4 mm')
         rect_atts = {'x':str(rect_x1), 
-                    'y':str(rect_y1), 
-                    'width':str(rect_width), 
-                    'height':str(rect_height),
-            'ry':str(0),
-			'style':'fill:#ffffff;stroke:none;fill-opacity:1' }
+                     'y':str(rect_y1), 
+                     'width':str(rect_width), 
+                     'height':str(rect_height),
+                     'ry':str(0),
+                     'style':'fill:%s;stroke:none;fill-opacity:1' %(White) }
         rect = inkex.etree.SubElement(parent, 'rect', rect_atts)
-        path_atts = {'style':'fill:#ffffff;stroke:#000000;stroke-width:'+str(inkex.unittouu('0.25 mm'))+';stroke-opacity:1',
-            'd':'m '+str(rect_x1)+", "+str(rect_y1)+ 
-                 " l "+str(0)+", "+str(rect_height)+
-                 " "  +str(rect_width)+", "+ str(0) +
-                 " "+str(0)+", "+str(-rect_height)}
+        path_atts = {'style':'fill:%s;stroke:%s;stroke-width:%s;stroke-opacity:1' %(White, Black, self.unittouu('0.25 mm')),
+                     'd':'m %s,%s l 0,%s %s,0 0, %s' % (rect_x1, rect_y1, rect_height, rect_width, -rect_height) }
         path = inkex.etree.SubElement(parent, 'path', path_atts)
-        
+
     def createMarkerAt(self, parent, x, y, radius, markerText):
+        " Draw a Marker at position x,y "
         markerGroup = inkex.etree.SubElement(parent, 'g')
-    
+        # should replace with svg:circle
         ellipce_atts = {
             inkex.addNS('cx','sodipodi'):str(x),
             inkex.addNS('cy','sodipodi'):str(y),
             inkex.addNS('rx','sodipodi'):str(radius),
             inkex.addNS('ry','sodipodi'):str(radius),
             inkex.addNS('type','sodipodi'):'arc',
-            'd':'m '+str(x+radius)+','+str(y)+' a '+
-                    str(x)+','+str(y)+'  0 1 1 ' + str(-radius*2)+',0 '+ 
-                    str(x)+','+str(y)+'  0 1 1 ' + str(radius*2)+',0 z',
-            'style':'fill:#b3b3b3;stroke:#000000;stroke-width:'+str(inkex.unittouu('0.125 mm'))+';stroke-opacity:1;fill-opacity:1' }
+                'd':'m %s,%s a %s,%s 0 1 1 %s,0 %s,%s 0 1 1 %s,0 z' %(x+radius, y, x, y, -radius*2, x, y, radius*2),
+                'style':'fill:%s;stroke:%s;stroke-width:%s;stroke-opacity:1;fill-opacity:1' %(Marker_color, Black, self.unittouu('0.125 mm'))}
         ellipse = inkex.etree.SubElement(markerGroup, 'path', ellipce_atts)
-        
-        textstyle = { 'font-size': '11 px',
-          'font-family': 'arial',
-          'text-anchor': 'middle',
-          'text-align': 'center',
-          'fill': '#000000'
-          }
-        text_atts = { 'style':simplestyle.formatStyle(textstyle),
-                    'x': str( x ),
-                    'y': str( y + radius*0.5) }
+        # draw the text
+        textstyle = {'font-size': '11 px',
+                     'font-family': 'arial',
+                     'text-anchor': 'middle',
+                     'text-align': 'center',
+                     'fill': Black }
+        text_atts = {'style':simplestyle.formatStyle(textstyle),
+                     'x': str(x),
+                     'y': str(y + radius*0.5) }
         text = inkex.etree.SubElement(markerGroup, 'text', text_atts)
         text.text = str(markerText)
-        
+
     def createMarkerOnWhite(self, parent, whiteNumber, markerText):
-        radius = self.white_key_width * 0.42
+        " Position Marker on White key "
+        radius = self.white_key_width * self.marker_radius_factor
         center_x = self.white_key_width * (whiteNumber + 0.5)
-        center_y = self.white_key_height * 0.92 - radius 
+        center_y = self.white_key_height * self.marker_y_offset_factor - radius 
         self.createMarkerAt(parent, center_x, center_y, radius, markerText)
-        return
 
     def createMarkerOnBlack(self, parent, whiteNumber, markerText):
-        radius = self.white_key_width * 0.42
+        " Position Marker on Black key "
+        radius = self.white_key_width * self.marker_radius_factor
         center_x = self.white_key_width * (whiteNumber + 1)
-        center_y = self.black_key_height * 0.92 - radius 
+        center_y = self.black_key_height * self.marker_y_offset_factor - radius 
         self.createMarkerAt(parent, center_x, center_y, radius, markerText)
-        return
-        
+
     def createMarkers(self, parent, keyNumberList, markerTextList):
         current=0
         for key in keyNumberList:
@@ -258,14 +258,17 @@ class SVGPianoScale (inkex.Effect):
             else:
                 self.createMarkerOnBlack(parent, int(keys_numbers[notes[key%12]])+(octave)*7, markerTextList[current])
             current += 1;
-        return
-        
+
     def createMarkersFromIntervals(self, parent, intervals):
-        intervalSumm = 0
-        for i in intervals:
-            intervalSumm += int(i)
+        """ Check intervals.
+            Then gather keys which need markers
+             and the text for each one.
+            Make markers.
+        """
+        # Check intervals are well defined and markers are legit.
+        intervalSumm = sum([int(i) for i in intervals])
         if intervalSumm != 12:
-            inkex.debug("Warning! Scale have not 12 half-tones")
+            inkex.debug("Warning! Scale must have 12 half-tones. But %d defined."%(intervalSumm))
             
         firstKeyNum = keyNumberFromNote(self.options.firstNote)
         lastKeyNum  = keyNumberFromNote(self.options.lastNote)
@@ -278,14 +281,14 @@ class SVGPianoScale (inkex.Effect):
             markerText = ('1',)
             currentInterval = 0
             for key in range(keyNumberFromNote(self.options.keynote), lastKeyNum+1):
-                if key-currentKey == int(intervals[currentInterval]):
+                if key - currentKey == int(intervals[currentInterval]):
                     markedKeys += (key,)
                     currentInterval += 1
                     markerText += (str(currentInterval+1),)
                     if currentInterval == len(intervals):
                         currentInterval = 0
                     currentKey = key
-                    
+            #
             currentKey = keyNumberFromNote(self.options.keynote)
             currentInterval = len(intervals)-1
             for key in range(keyNumberFromNote(self.options.keynote), firstKeyNum-1, -1):
@@ -296,59 +299,60 @@ class SVGPianoScale (inkex.Effect):
                     if currentInterval == -1:
                         currentInterval = len(intervals)-1
                     currentKey = key
-                    
-                    
+        # make the markers
         self.createMarkers(parent, markedKeys, markerText)
-    def createHelpSheetScaleFromTitleAndIntervals(self, parent, title, intervals):
-        textstyle = { 'font-size': '64px',
-          'font-family': 'arial',
-          'text-anchor': 'middle',
-          'text-align': 'center',
-          'fill': '#000000'
-          }
-        text_atts = { 'style':simplestyle.formatStyle(textstyle),
-                    'x': str( self.doc_width/2 ),
-                    'y': str( inkex.unittouu('18 mm') ) }
+
+    def createHelpSheet(self, parent, title, intervals):
+        """ Draw big text Label and draw 12 different scales
+        """
+        textstyle = {'font-size': '64px',
+                     'font-family': 'arial',
+                     'text-anchor': 'middle',
+                     'text-align': 'center',
+                     'fill': Black }
+        text_atts = {'style':simplestyle.formatStyle(textstyle),
+                     'x': str( self.doc_width/2 ),
+                     'y': str( self.black_key_height) }
         text = inkex.etree.SubElement(parent, 'text', text_atts)
         text.text = title
+        #
         for i in range(0, 12):
+            # override the ui input value for each note in the scale
             self.options.keynote = notes[i]
+            # calculate the piano position on the page
             if keys_color[i] == "W":
-                t = 'translate(' + str( self.doc_width/2 ) + ','\
-                    + str( self.doc_height-self.white_key_height*1.5-(self.white_key_height+inkex.unittouu('7 mm')) * int(keys_numbers[self.options.keynote]) ) + ')'
-            else:
-                t = 'translate(' + str( inkex.unittouu('7 mm') ) + ',' \
-                    + str( self.doc_height-self.white_key_height*1.5-(self.white_key_height+inkex.unittouu('7 mm')) * int(keys_numbers[self.options.keynote])-self.white_key_height*0.5 ) + ')'
+                t = 'translate(%s,%s)' % (self.doc_width/2,
+                                          self.doc_height - self.white_key_height*1.5 
+                                          - (self.white_key_height + self.unittouu('7 mm')) * int(keys_numbers[self.options.keynote]) )
+            else: # Black key
+                t = 'translate(%s,%s)' % (self.unittouu('7 mm'), 
+                                          self.doc_height- self.white_key_height*1.5
+                                          - (self.white_key_height+self.unittouu('7 mm')) * int(keys_numbers[self.options.keynote]) - self.white_key_height*0.5 )
             group = inkex.etree.SubElement(parent, 'g', { 'transform':t})
+            # Create a piano using that keynote in the Scale (defined in intervals)
             self.createPiano(group)
             self.createMarkersFromIntervals(group, intervals)
-            
-    def createHelpSheet(self, parent, helpSheetNumber):
-        self.createHelpSheetScaleFromTitleAndIntervals(parent, helpSheetTitle[helpSheetNumber], helpSheetIntervals[helpSheetNumber])
-        return
-        
-    def effect(self):
-        self.validate_options()
-        self.calculate_size_and_positions()
-        
-        
-        parent = self.document.getroot()
 
+
+    def effect(self):
+        self.calculate_size_and_positions()
+        parent = self.document.getroot()
         if str(self.options.tab) == '"scale"':
-            t = 'translate(' + str( self.view_center[0] ) + ',' + str( self.view_center[1] ) + ')'
+            t = 'translate(%s,%s)' % (self.view_center[0],  self.view_center[1])
             group = inkex.etree.SubElement(parent, 'g', { 'transform':t})
             self.createPiano(group)
             self.createMarkersFromIntervals(group, intervals[self.options.scale])
         elif str(self.options.tab) == '"helpSheet"':
-            t = 'translate(' + str( inkex.unittouu('5 mm') ) + ',' + str( inkex.unittouu('5 mm') ) + ')'
+            t = 'translate(%s,%s)' % (self.unittouu('5 mm'), self.unittouu('5 mm'))
             group = inkex.etree.SubElement(parent, 'g', { 'transform':t})
-            self.createHelpSheet(group, self.options.helpSheet)
-        else:
-            t = 'translate(' + str( self.view_center[0] ) + ',' + str( self.view_center[1] ) + ')'
+            scale_index = self.options.helpSheet
+            self.createHelpSheet(group, helpSheets[scale_index][0], helpSheets[scale_index][1])
+        else: # direct intervals
+            t = 'translate(%s,%s)' % (self.view_center[0], self.view_center[1])
             group = inkex.etree.SubElement(parent, 'g', { 'transform':t})
             self.createPiano(group)
             self.createMarkersFromIntervals(group, self.options.intervals)
 
-if __name__ == '__main__':   #pragma: no cover
+if __name__ == '__main__':
     e = SVGPianoScale()
     e.affect()
