@@ -4,16 +4,13 @@ Name "Inkscape-music-scale-generator"
 ; The file to write
 OutFile "Inkscape-music-scale-generator.exe"
 
-; The only place where I have found reliable path to the Inkscape is uninstall-key from regestry
-InstallDirRegKey HKLM SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Inkscape InstallLocation
-
-; Request application privileges for Windows Vista
-RequestExecutionLevel admin
+; I'm not sure how to get an actual installation directory of the Inkscape,
+; therefore we'll install extension files into the user's appdata roaming folder
+InstallDir $APPDATA\Inkscape
 
 ;--------------------------------
 
 ; Pages
-
 Page directory
 Page instfiles
 
@@ -23,13 +20,13 @@ Page instfiles
 Section "" ;No components page, name is not important
 
   ; Set output path to the installation directory.
-  SetOutPath $INSTDIR\share\extensions
+  SetOutPath $INSTDIR\extensions
   
   ; Put file there
   File ..\share\extensions\svgPianoScale.inx 
   File ..\share\extensions\svgPianoScale.py
   
-  SetOutPath $INSTDIR\share\examples
+  SetOutPath $INSTDIR\examples
   
   File ..\share\examples\MajorScales.svg 
   
