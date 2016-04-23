@@ -20,6 +20,7 @@ The installation procedure is pretty straight forward.
 - Get the [svgPianoScale.inx](https://github.com/piroxiljin/inkscape-music-scale-generator/blob/master/share/extensions/svgPianoScale.inx) and the [svgPianoScale.py](https://github.com/piroxiljin/inkscape-music-scale-generator/blob/master/share/extensions/svgPianoScale.py) files and put them into the application data directory. 
 - The correct directory is indicated in:
  - Edit -> Preferences -> System: User extensions
+
 On Windows it can be manually found by entering this into a File Browser's address line:
   - %appdata%/inkscape/extensions
 
