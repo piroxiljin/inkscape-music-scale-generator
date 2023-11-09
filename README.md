@@ -23,6 +23,3 @@ The installation procedure is pretty straight forward.
 
 On Windows it can be manually found by entering this into a File Browser's address line:
   - %appdata%/inkscape/extensions
-
-### Windows
-Windows users also can download and run the released installation binary [Inkscape-music-scale-generator.exe](https://github.com/piroxiljin/inkscape-music-scale-generator/releases/download/v1.0/Inkscape-music-scale-generator.exe)
